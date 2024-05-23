@@ -7,8 +7,8 @@ confinement: strict
 
 architectures:
   - build-on: amd64
-  #- build-on: arm64
-  #- build-on: armhf
+  - build-on: arm64
+  - build-on: armhf
 
 parts:
   real-esrgan:
@@ -31,6 +31,8 @@ parts:
     override-build: |
       craftctl default
       sed -e '1c#!/usr/bin/env python3' -i ${CRAFT_PART_INSTALL}/snap/upscaler/current/usr/bin/upscaler
+      sed -i 's|https://gitlab.gnome.org/World/Upscaler/-/issues|https://github.com/soumyaDghosh/upscaler-snap/issues|g' $CRAFT_PART_INSTALL/snap/upscaler/current/usr/share/metainfo/io.gitlab.theevilskeleton.Upscaler.metainfo.xml
+      sed -i 's|https://matrix.to/#/#Upscaler:gnome.org|https://github.com/soumyaDghosh/upscaler-snap/issues|g' $CRAFT_PART_INSTALL/snap/upscaler/current/usr/share/metainfo/io.gitlab.theevilskeleton.Upscaler.metainfo.xml
     organize:
       snap/upscaler/current: .
 
