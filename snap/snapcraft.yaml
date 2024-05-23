@@ -1,7 +1,7 @@
 name: upscaler
 base: core22
 adopt-info: upscaler
-
+compression: lzo
 grade: stable
 confinement: strict
 
