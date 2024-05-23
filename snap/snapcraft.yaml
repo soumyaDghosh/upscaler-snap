@@ -1,0 +1,103 @@
+name: upscaler
+base: core22
+adopt-info: upscaler
+
+grade: stable
+confinement: strict
+
+architectures:
+  - build-on: amd64
+  #- build-on: arm64
+  #- build-on: armhf
+
+parts:
+  real-esrgan:
+    plugin: nil
+    source: https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesrgan-ncnn-vulkan-20220424-ubuntu.zip
+    override-build: |
+      craftctl default
+      install -Dm755 $CRAFT_PART_SRC/realesrgan-ncnn-vulkan -t $CRAFT_PART_INSTALL/usr/bin
+      mkdir $CRAFT_PART_INSTALL/usr/bin/models
+      mv $CRAFT_PART_SRC/models/*.{bin,param} $CRAFT_PART_INSTALL/usr/bin/models
+
+  upscaler:
+    plugin: meson
+    source: https://gitlab.gnome.org/World/Upscaler.git
+    source-tag: '1.2.2'
+    meson-parameters: [ --prefix=/snap/upscaler/current/usr, --buildtype=release ]
+    parse-info: [ usr/share/metainfo/io.gitlab.theevilskeleton.Upscaler.metainfo.xml ]
+    build-snaps:
+      - blueprint-compiler
+    override-build: |
+      craftctl default
+      sed -e '1c#!/usr/bin/env python3' -i ${CRAFT_PART_INSTALL}/snap/upscaler/current/usr/bin/upscaler
+    organize:
+      snap/upscaler/current: .
+
+  deps:
+    after: [upscaler]
+    plugin: python
+    source: https://github.com/python-cffi/cffi.git
+    source-tag: 'v1.15.1'
+    source-depth: 1
+    python-packages:
+      - vulkan==1.1.99.1
+      - pillow==10.0.0
+    prime:
+      - -bin
+      - -pyvenv.cfg
+      - -include
+      - -lib64
+      - -lib
+    organize:
+      lib/python3.10/site-packages: usr/lib/python3/dist-packages
+
+  debs:
+    after: [deps]
+    plugin: nil
+    stage-packages:
+      - vulkan-tools
+      - mesa-vulkan-drivers
+    override-build: |
+      craftctl default
+      sed -i 's#/usr#/snap/upscaler/current/usr#g' $CRAFT_PART_INSTALL/usr/share/vulkan/icd.d/*.json
+    prime:
+      - usr/bin/vulkaninfo
+      - usr/lib/*/libVkLayer_INTEL_nullhw.so
+      - usr/lib/*/libVkLayer_MESA_device_select.so
+      - usr/lib/*/libVkLayer_MESA_overlay.so
+      - usr/lib/*/libvulkan_intel.so
+      - usr/lib/*/libvulkan_intel_hasvk.so
+      - usr/lib/*/libvulkan_lvp.so
+      - usr/lib/*/libvulkan_radeon.so
+      - usr/lib/*/libvulkan_virtio.so
+      - usr/share/drirc.d
+      - usr/share/vulkan
+
+
+slots:
+  upscaler:
+    interface: dbus
+    bus: session
+    name: io.gitlab.theevilskeleton.Upscaler
+
+plugs:
+  ffmpeg-2204:
+    interface: content
+    target: ffmpeg-platform
+    default-provider: ffmpeg-2204
+
+apps:
+  upscaler:
+    command: usr/bin/upscaler
+    desktop: usr/share/applications/io.gitlab.theevilskeleton.Upscaler.desktop
+    extensions: [ gnome ]
+    environment:
+      PYTHONPATH: $SNAP/usr/lib/python3/dist-packages:$PYTHONPATH
+      LD_LIBRARY_PATH: $SNAP/ffmpeg-platform/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR:$LD_LIBRARY_PATH
+      GDK_DEBUG: portals
+    common-id: io.gitlab.theevilskeleton.Upscaler
+    plugs:
+      - network
+      - network-status
+      - home
