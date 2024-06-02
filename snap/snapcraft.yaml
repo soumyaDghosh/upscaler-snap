@@ -41,7 +41,7 @@ parts:
     after: [upscaler]
     plugin: python
     source: https://github.com/python-cffi/cffi.git
-    source-tag: 'v1.15.1'
+    source-tag: 'v1.17.0rc1'
     source-depth: 1
     python-packages:
       - vulkan==1.1.99.1
