@@ -1,4 +1,9 @@
 name: upscaler
+title: Upscaler (Unofficial)
+description: |
+  Upscaler allows you to upscale and enhance a given image. 
+  It is a front-end for Real-ESRGAN ncnn Vulkan.
+  (Unofficial Snap)
 base: core22
 adopt-info: upscaler
 compression: lzo
