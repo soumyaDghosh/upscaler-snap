@@ -28,7 +28,7 @@ parts:
   upscaler:
     plugin: meson
     source: https://gitlab.gnome.org/World/Upscaler.git
-    source-tag: '1.4.0'
+    source-tag: '1.4.1'
     source-depth: 1
     meson-parameters: [ --prefix=/snap/upscaler/current/usr, --buildtype=release ]
     parse-info: [ usr/share/metainfo/io.gitlab.theevilskeleton.Upscaler.metainfo.xml ]
