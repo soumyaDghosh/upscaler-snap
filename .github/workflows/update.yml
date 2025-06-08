@@ -9,14 +9,36 @@ on:
 permissions: write-all
 
 jobs:
-  update-snapcraft-yaml:
+  sync:
+    name: 🔄 Sync version with upstream
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout this repo
-        uses: actions/checkout@v4
-      - name: Run desktop-snaps action
-        uses: ubuntu/desktop-snaps@UDENG-961-optionally_take_user_as_input
+      - name: 🔄 Sync version with upstream
+        uses: snapcrafters/ci/sync-version@main
         with:
-          user: soumyaDghosh
           token: ${{ secrets.GITHUB_TOKEN }}
-          repo: ${{ github.repository }}
+          update-script: |
+            # upscayl-ncnn
+            upscayl_ncnn_url=$(curl -s https://raw.githubusercontent.com/flathub/io.gitlab.theevilskeleton.Upscaler/refs/heads/master/io.gitlab.theevilskeleton.Upscaler.yaml | yq -r '.modules[] | select(.name == "upscayl-ncnn") | .sources[].url')
+            upscayl_ncnn_checksum=$(curl -s https://raw.githubusercontent.com/flathub/io.gitlab.theevilskeleton.Upscaler/refs/heads/master/io.gitlab.theevilskeleton.Upscaler.yaml | yq -r '.modules[] | select(.name == "upscayl-ncnn") | .sources[].sha256')
+            yq -i ".parts.upscayl-ncnn.source = \"$upscayl_ncnn_url\"" snap/snapcraft.yaml
+            yq -i ".parts.upscayl-ncnn.source-checksum = \"sha256/$upscayl_ncnn_checksum\"" snap/snapcraft.yaml
+
+            # vulkan-models
+            vulkan_models_url=$(curl -s https://raw.githubusercontent.com/flathub/io.gitlab.theevilskeleton.Upscaler/refs/heads/master/io.gitlab.theevilskeleton.Upscaler.yaml | yq -r '.modules[] | select(.name == "vulkan-models") | .sources[].url')
+            vulkan_models_checksum=$(curl -s https://raw.githubusercontent.com/flathub/io.gitlab.theevilskeleton.Upscaler/refs/heads/master/io.gitlab.theevilskeleton.Upscaler.yaml | yq -r '.modules[] | select(.name == "vulkan-models") | .sources[].sha256')
+
+            # upscaler
+            upscaler_version=$(curl -s https://raw.githubusercontent.com/flathub/io.gitlab.theevilskeleton.Upscaler/refs/heads/master/io.gitlab.theevilskeleton.Upscaler.yaml | yq -r '.modules[] | select(.name == "upscaler") | .sources[].tag')
+            yq -i ".parts.upscaler.source-tag = \"$upscaler_version\"" snap/snapcraft.yaml
+
+            # python dependencies
+                        
+            cffi_version=$(curl -s https://raw.githubusercontent.com/flathub/io.gitlab.theevilskeleton.Upscaler/refs/heads/master/python3-cffi.json | jq '.sources[0].url' | grep -oP 'cffi-\K[0-9.]+(?=\.tar\.gz)')
+            yq -i ".parts.deps.source-tag = \"cffi==${cffi_version}\"" snap/snapcraft.yaml
+
+            vulkan_version=$(curl -s https://raw.githubusercontent.com/flathub/io.gitlab.theevilskeleton.Upscaler/refs/heads/master/python3-vulkan.json | jq '.sources[0].url' | grep -oP 'vulkan-\K[0-9.]+(?=\.tar\.gz)')
+            yq -i ".parts.deps.python-packages[0] = \"vulkan==${vulkan_version}\"" snap/snapcraft.yaml
+
+            pillow_version=$(curl -s https://raw.githubusercontent.com/flathub/io.gitlab.theevilskeleton.Upscaler/refs/heads/master/io.gitlab.theevilskeleton.Upscaler.yaml | yq -r '.modules[] | select(.name == "python-pillow") | .sources[].tag')
+            yq -i ".parts.deps.python-packages[1] = \"pillow==${pillow_version}\"" snap/snapcraft.yaml
